@@ -1,5 +1,6 @@
 import React from 'react';
 import { Investor } from '../types';
+import { INVESTOR_PALETTE } from '../utils/calculator';
 import { Users, Plus, Trash2, Split, AlertCircle, CheckCircle } from 'lucide-react';
 
 interface InvestorSplitProps {
@@ -22,10 +23,12 @@ export const InvestorSplit: React.FC<InvestorSplitProps> = ({
   const handleAddInvestor = () => {
     const nextIndex = investors.length + 1;
     const suggestedAmount = diff > 0 ? Math.round(diff) : 0;
+    const color = INVESTOR_PALETTE[investors.length % INVESTOR_PALETTE.length];
     const newInvestor: Investor = {
       id: Math.random().toString(36).substring(2, 9),
       name: `Investor ${nextIndex}`,
       amount: suggestedAmount,
+      color,
     };
     setInvestors([...investors, newInvestor]);
   };
@@ -78,14 +81,14 @@ export const InvestorSplit: React.FC<InvestorSplitProps> = ({
           <div className="flex items-center gap-1.5 sm:gap-2">
             <Users className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400 shrink-0" />
             <h3 className="text-xs sm:text-sm font-bold text-white tracking-wide">
-              Investor Pool
+              Investor Pool & Capital Share
             </h3>
             <span className="text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono">
               {investors.length} {investors.length === 1 ? 'Investor' : 'Investors'}
             </span>
           </div>
           <p className="text-[11px] text-slate-400 mt-0.5 hidden xs:block">
-            Split net profit pro-rata after Demat cut
+            Capital pooled to fund the allotted bid amount
           </p>
         </div>
 
@@ -109,10 +112,30 @@ export const InvestorSplit: React.FC<InvestorSplitProps> = ({
             className="flex items-center gap-1 px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-sm transition-all active:scale-95 min-h-[32px]"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>Add</span>
+            <span>Add Investor</span>
           </button>
         </div>
       </div>
+
+      {/* Portfolio Share Multi-Color Segment Bar */}
+      {totalContributed > 0 && investors.length > 1 && (
+        <div className="mb-3">
+          <div className="h-2 w-full bg-slate-950 rounded-full overflow-hidden flex border border-slate-800">
+            {investors.map((inv, idx) => {
+              const pct = ((Number(inv.amount) || 0) / totalContributed) * 100;
+              const color = inv.color || INVESTOR_PALETTE[idx % INVESTOR_PALETTE.length];
+              return (
+                <div
+                  key={inv.id}
+                  style={{ width: `${pct}%`, backgroundColor: color }}
+                  className="h-full transition-all duration-300"
+                  title={`${inv.name}: ${pct.toFixed(1)}%`}
+                />
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Investor Rows */}
       <div className="space-y-2">
@@ -121,14 +144,19 @@ export const InvestorSplit: React.FC<InvestorSplitProps> = ({
             totalContributed > 0
               ? ((Number(inv.amount) || 0) / totalContributed) * 100
               : 0;
+          const color = inv.color || INVESTOR_PALETTE[index % INVESTOR_PALETTE.length];
 
           return (
             <div
               key={inv.id}
               className="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/90 space-y-2 sm:space-y-0 sm:flex sm:items-center sm:gap-2.5"
             >
-              {/* Mobile: Top Row with Name + Delete */}
+              {/* Mobile: Top Row with Color Dot + Name + Delete */}
               <div className="flex items-center gap-2 flex-1">
+                <span
+                  className="w-3 h-3 rounded-full shrink-0"
+                  style={{ backgroundColor: color }}
+                />
                 <input
                   type="text"
                   value={inv.name}

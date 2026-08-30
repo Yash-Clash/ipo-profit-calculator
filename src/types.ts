@@ -3,11 +3,12 @@ export type InputMode = 'total' | 'per_share';
 export interface TierInfo {
   id: number;
   label: string;
-  minGain: number; // inclusive lower bound (or exclusive depending on rule)
-  maxGain: number | null; // inclusive upper bound, null for infinity
+  minGain: number; // lower bound
+  maxGain: number | null; // upper bound, null for infinity
   profitCutPercent: number; // e.g. 0, 10, 15, 20, 25
   description: string;
   badgeColor: string;
+  glowColor: string;
 }
 
 export interface CalculationResult {
@@ -39,6 +40,7 @@ export interface Investor {
   id: string;
   name: string;
   amount: number;
+  color?: string;
 }
 
 export interface InvestorPayout {
@@ -49,5 +51,12 @@ export interface InvestorPayout {
   profitShare: number; // net profit share after demat cut
   totalPayout: number; // capital returned + net profit
   roiPercent: number; // return on investor's capital
+  color: string;
 }
 
+export interface IpoMetadata {
+  ipoName: string;
+  dematAccount: string;
+  settlementId: string;
+  lotMultiplier: number;
+}

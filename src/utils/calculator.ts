@@ -7,8 +7,9 @@ export const TIERS: TierInfo[] = [
     minGain: -Infinity,
     maxGain: 15,
     profitCutPercent: 0,
-    description: '0% Profit Share (Baseline/Protected)',
-    badgeColor: 'bg-slate-500/20 text-slate-300 border-slate-700',
+    description: '0% Profit Cut (Capital & Base Return Protected)',
+    badgeColor: 'bg-slate-800/80 text-slate-300 border-slate-700',
+    glowColor: 'shadow-slate-900/50',
   },
   {
     id: 2,
@@ -16,8 +17,9 @@ export const TIERS: TierInfo[] = [
     minGain: 15,
     maxGain: 20,
     profitCutPercent: 10,
-    description: '10% Profit Share',
-    badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-700',
+    description: '10% Demat Commission Slab',
+    badgeColor: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
+    glowColor: 'shadow-emerald-950/60',
   },
   {
     id: 3,
@@ -25,8 +27,9 @@ export const TIERS: TierInfo[] = [
     minGain: 20,
     maxGain: 25,
     profitCutPercent: 15,
-    description: '15% Profit Share',
-    badgeColor: 'bg-blue-500/20 text-blue-300 border-blue-700',
+    description: '15% Demat Commission Slab',
+    badgeColor: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30',
+    glowColor: 'shadow-cyan-950/60',
   },
   {
     id: 4,
@@ -34,8 +37,9 @@ export const TIERS: TierInfo[] = [
     minGain: 25,
     maxGain: 30,
     profitCutPercent: 20,
-    description: '20% Profit Share',
-    badgeColor: 'bg-purple-500/20 text-purple-300 border-purple-700',
+    description: '20% Demat Commission Slab',
+    badgeColor: 'bg-purple-500/15 text-purple-300 border-purple-500/30',
+    glowColor: 'shadow-purple-950/60',
   },
   {
     id: 5,
@@ -43,22 +47,22 @@ export const TIERS: TierInfo[] = [
     minGain: 30,
     maxGain: null,
     profitCutPercent: 25,
-    description: '25% Profit Share (Maximum)',
-    badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-700',
+    description: '25% Demat Commission Slab (Super Gain Tier)',
+    badgeColor: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
+    glowColor: 'shadow-amber-950/60',
   },
 ];
 
-/**
- * Determines which tier matches a given return percentage x.
- * Rule:
- * (x <= 15)      => 0%
- * (15 < x <= 20) => 10%
- * (20 < x <= 25) => 15%
- * (25 < x <= 30) => 20%
- * (x > 30)       => 25%
- */
+export const INVESTOR_PALETTE = [
+  '#10b981', // emerald
+  '#06b6d4', // cyan
+  '#8b5cf6', // purple
+  '#f59e0b', // amber
+  '#ec4899', // pink
+  '#3b82f6', // blue
+];
+
 export function getTierForReturn(x: number): { tier: TierInfo; nextTier: TierInfo | null } {
-  // Use a small epsilon for floating point comparison accuracy
   const eps = 1e-7;
 
   let activeIndex = 0;
@@ -80,14 +84,6 @@ export function getTierForReturn(x: number): { tier: TierInfo; nextTier: TierInf
   return { tier: activeTier, nextTier };
 }
 
-/**
- * Calculates progressive / marginal profit share if applicable:
- * 0% on gain up to 15%
- * 10% on gain between 15% and 20%
- * 15% on gain between 20% and 25%
- * 20% on gain between 25% and 30%
- * 25% on gain above 30%
- */
 export function calculateMarginalCut(allottedAmount: number, returnPercent: number): number {
   if (allottedAmount <= 0 || returnPercent <= 15) {
     return 0;
@@ -96,28 +92,21 @@ export function calculateMarginalCut(allottedAmount: number, returnPercent: numb
   let totalCut = 0;
   const x = returnPercent;
 
-  // Bracket 15% to 20% (max 5% gain) at 10%
   if (x > 15) {
     const gainInBracket = Math.min(x, 20) - 15;
     const profitPortion = allottedAmount * (gainInBracket / 100);
     totalCut += profitPortion * 0.10;
   }
-
-  // Bracket 20% to 25% (max 5% gain) at 15%
   if (x > 20) {
     const gainInBracket = Math.min(x, 25) - 20;
     const profitPortion = allottedAmount * (gainInBracket / 100);
     totalCut += profitPortion * 0.15;
   }
-
-  // Bracket 25% to 30% (max 5% gain) at 20%
   if (x > 25) {
     const gainInBracket = Math.min(x, 30) - 25;
     const profitPortion = allottedAmount * (gainInBracket / 100);
     totalCut += profitPortion * 0.20;
   }
-
-  // Bracket > 30% at 25%
   if (x > 30) {
     const gainInBracket = x - 30;
     const profitPortion = allottedAmount * (gainInBracket / 100);
@@ -162,17 +151,14 @@ export function calculateIpoProfit(
   const netProfitRemaining = grossProfit - profitCutAmount;
   const investorRemainingAmount = sellingValue - profitCutAmount;
 
-  // Marginal calculation for reference
   const marginalCutAmount = calculateMarginalCut(allottedAmount, returnPercent);
 
-  // Next tier threshold calculations
   let gainNeededForNextTier: number | null = null;
   let priceNeededForNextTier: number | null = null;
 
   if (nextTier) {
     const targetGain = nextTier.minGain;
     gainNeededForNextTier = Math.max(0, targetGain - returnPercent);
-    // selling price required: allotted * (1 + targetGain / 100)
     priceNeededForNextTier = allottedAmount * (1 + targetGain / 100);
   }
 
@@ -193,11 +179,6 @@ export function calculateIpoProfit(
   };
 }
 
-/**
- * Calculates individual investor payouts based on their capital contribution.
- * After deducting the demat account holder's profit cut percentage according to the slabs,
- * the remaining net profit is distributed pro-rata according to each investor's contribution.
- */
 export function calculateInvestorPayouts(
   investors: Investor[],
   allottedAmount: number,
@@ -206,21 +187,23 @@ export function calculateInvestorPayouts(
   const totalContributed = investors.reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
   const baseAmount = totalContributed > 0 ? totalContributed : allottedAmount;
 
-  return investors.map((inv) => {
+  return investors.map((inv, idx) => {
     const amount = Number(inv.amount) || 0;
     const sharePercent = baseAmount > 0 ? (amount / baseAmount) * 100 : 0;
     const profitShare = (sharePercent / 100) * netProfitRemaining;
     const totalPayout = amount + profitShare;
     const roiPercent = amount > 0 ? (profitShare / amount) * 100 : 0;
+    const color = inv.color || INVESTOR_PALETTE[idx % INVESTOR_PALETTE.length];
 
     return {
       id: inv.id,
-      name: inv.name.trim() || 'Unnamed Investor',
+      name: inv.name.trim() || `Investor ${idx + 1}`,
       contributedAmount: amount,
       sharePercent,
       profitShare,
       totalPayout,
       roiPercent,
+      color,
     };
   });
 }
